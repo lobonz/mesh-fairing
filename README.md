@@ -1,36 +1,50 @@
-# **Mesh Fairing**
+# Mesh Fairing Add-on for Blender 4.3+
 
 ![fairing](https://user-images.githubusercontent.com/8960984/59396054-36e85880-8d44-11e9-873b-d8aa2293b2d5.gif)
 
-This Blender addon provides an alternative smoothing operation. Conventional smoothing has a tendency to cause pinching, bumps, and other undesirable artifacts; however, mesh fairing results in a smooth-as-possible mesh patch.
+This Blender addon provides an alternative smoothing operation with **NEW Blender 4.3+ compatibility and N-Panel integration**. Conventional smoothing has a tendency to cause pinching, bumps, and other undesirable artifacts; however, mesh fairing results in a smooth-as-possible mesh patch.
 
-# **Installation**
+## ✨ New Features in v1.1.0
+
+- **Blender 4.3+ Compatibility**: Updated for the latest Blender versions
+- **N-Panel Integration**: Easy access via the Tools panel (press N)
+- **Quick Actions**: Fast access to common operations with saved settings
+- **Enhanced UI**: Modern interface with contextual controls
+- **Better Property Management**: Improved settings persistence
+
+## Installation
 
 ![download](https://user-images.githubusercontent.com/8960984/59553680-ab461600-8f55-11e9-8332-8f617fb40965.png)
 
-1. Download the zip archive.
+1. Download the addon files
+2. Open Blender 4.3 or later
+3. Go to Edit > Preferences > Add-ons
+4. Click "Install..." and select the addon folder
+5. Enable "Mesh: Mesh Fairing"
+6. Install dependencies (NumPy/SciPy) via the N-panel
 
-![preferences](https://user-images.githubusercontent.com/8960984/59553683-ae410680-8f55-11e9-91e9-0009257f0abb.png)
+## Usage
 
-2. Install the downloaded file.
+### N-Panel Access (Recommended)
 
-3. Enable the addon.
+1. In the 3D Viewport, press `N` to open the side panel
+2. Navigate to the "Tool" tab  
+3. Find the "Mesh Fairing" panel
+4. The panel adapts to your current mode (Edit or Sculpt)
 
-4. Install SciPy Python module.
+### Traditional Menu Access
 
-	Blender ships with NumPy, but it is *highly* recommended that users install SciPy. Mesh fairing with the latter is much faster and less prone to crashing. If you encounter any issues during the automated installation process, consider attempting manual installation: https://blender.stackexchange.com/questions/56011/how-to-use-pip-with-blenders-bundled-python/56013#56013
-
-# **Location**
-
-Mesh fairing is available in both *Sculpt* and *Edit* modes of the *3D Viewport* panel.
+Mesh fairing is also available in both *Sculpt* and *Edit* modes via the traditional menus:
 
 ![fairing-menus](https://user-images.githubusercontent.com/8960984/59396675-18379100-8d47-11e9-8146-93c5b6ba5077.png)
 
-# **Tool Options**
+## Tool Options
 
 Mesh fairing displaces affected vertices to produce a smooth-as-possible mesh patch with respect to a specified continuity constraint.
 
 * **Continuity:** Determines how inner vertices blend with surrounding faces to produce a smooth-as-possible mesh patch
+
+	* **Smooth:** Simple Laplacian smoothing that averages neighboring vertices. Provides traditional mesh smoothing without bulging effects.
 
 	* **Position:** Change in vertex position is minimized.
 
@@ -48,7 +62,19 @@ Mode-specific options also exist to affect the outcome of mesh fairing.
 
 * **Triangulate:** Triangulates affected region to produce higher quality results
 
-# **Usage Examples**
+## Dependencies
+
+The addon works best with NumPy and SciPy installed. Use the dependency installation buttons in the N-panel, or install manually via Blender's Python console:
+
+```python
+import subprocess
+import sys
+subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy", "scipy"])
+```
+
+Blender ships with NumPy, but it is *highly* recommended that users install SciPy. Mesh fairing with the latter is much faster and less prone to crashing.
+
+## Usage Examples
 
 Here are a few examples that demonstrate the usefulness of mesh fairing:
 
@@ -64,7 +90,15 @@ Here are a few examples that demonstrate the usefulness of mesh fairing:
 
 	![shape-key](https://user-images.githubusercontent.com/8960984/59396649-00600d00-8d47-11e9-838d-77d3b1a06c81.gif)
 
-# **Credits**
+## Tips for Best Results
+
+- For best results in Edit mode, select a coherent region of vertices
+- In Sculpt mode, use masks to define the area to be smoothed  
+- Start with Position continuity and increase to Tangent or Curvature for smoother results
+- Enable Triangulate for higher quality results on complex geometry
+- Use the Quick Fair button in the N-panel for rapid iteration
+
+## Credits
 
 * **Addon Author:** Brett Fedack
 

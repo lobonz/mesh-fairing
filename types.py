@@ -297,6 +297,7 @@ class Continuity(enum.Enum):
     """
     Defines the enumeration of continuity types
     """
+    SMOOTH = 0
     POS = 1
     TAN = 2
     CURV = 3
@@ -317,6 +318,12 @@ class Continuity(enum.Enum):
             ),
             default = cls.TAN.name,
             items = [(
+                    cls.SMOOTH.name,
+                    'Smooth',
+                    'Simple Laplacian smoothing that averages neighboring vertices.',
+                    '',
+                    cls.SMOOTH.value
+                ), (
                     cls.POS.name,
                     'Position',
                     'Change in vertex position is minimized.',

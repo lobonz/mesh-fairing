@@ -20,6 +20,104 @@ from . import moduleutil
 from . import operators
 
 
+class MESH_PT_mesh_fairing_panel(bpy.types.Panel):
+    """Mesh Fairing tools panel for the N-Panel"""
+    bl_label = "Mesh Fairing"
+    bl_idname = "MESH_PT_mesh_fairing_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Tool"
+    bl_context = "mesh_edit"
+    
+    @classmethod
+    def poll(cls, context):
+        return (context.object and 
+                context.object.type == 'MESH' and 
+                context.mode in {'EDIT_MESH', 'SCULPT'})
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        # Main mesh fairing section
+        col = layout.column(align=True)
+        col.label(text="Mesh Fairing Tools:")
+        
+        if context.mode == 'EDIT_MESH':
+            # Edit mode tools
+            row = col.row(align=True)
+            row.operator(operators.MESH_OT_fair_vertices.bl_idname, 
+                        text="Fair Vertices", icon='MESH_DATA')
+            
+            # Quick settings section
+            box = layout.box()
+            box.label(text="Quick Settings:", icon='SETTINGS')
+            
+            # Continuity settings
+            box.prop(context.scene, 'mesh_fairing_continuity')
+            box.prop(context.scene, 'mesh_fairing_triangulate')
+            
+            # Quick action button with current settings
+            row = box.row()
+            row.scale_y = 1.2
+            op = row.operator(operators.MESH_OT_fair_vertices_internal.bl_idname, 
+                            text="Quick Fair", icon='PLAY')
+            op.continuity = context.scene.mesh_fairing_continuity
+            op.triangulate = context.scene.mesh_fairing_triangulate
+        
+        elif context.mode == 'SCULPT':
+            # Sculpt mode tools
+            row = col.row(align=True)
+            row.operator(operators.SCULPT_OT_fair_vertices.bl_idname, 
+                        text="Fair Vertices", icon='SCULPTMODE_HLT')
+            
+            # Quick settings for sculpt mode
+            box = layout.box()
+            box.label(text="Sculpt Settings:", icon='SETTINGS')
+            
+            box.prop(context.scene, 'sculpt_fairing_continuity')
+            box.prop(context.scene, 'sculpt_fairing_invert_mask')
+            
+            # Quick action button for sculpt mode
+            row = box.row()
+            row.scale_y = 1.2
+            op = row.operator(operators.SCULPT_OT_fair_vertices_internal.bl_idname, 
+                            text="Quick Fair", icon='PLAY')
+            op.continuity = context.scene.sculpt_fairing_continuity
+            op.invert_mask = context.scene.sculpt_fairing_invert_mask
+        
+        # Dependencies section
+        layout.separator()
+        deps_box = layout.box()
+        deps_box.label(text="Dependencies:", icon='SCRIPTPLUGINS')
+        draw_numpy_ui(context, deps_box)
+        draw_scipy_ui(context, deps_box)
+        
+        # Quick Actions section
+        layout.separator()
+        qa_box = layout.box()
+        qa_box.label(text="Quick Actions:", icon='FORWARD')
+        
+        row = qa_box.row()
+        row.operator("wm.call_menu", text="Add to Quick Favorites", 
+                    icon='SOLO_ON').name = "MESH_MT_mesh_fairing_quick_menu"
+
+
+class MESH_MT_mesh_fairing_quick_menu(bpy.types.Menu):
+    """Quick menu for mesh fairing operations"""
+    bl_label = "Mesh Fairing Quick Menu"
+    bl_idname = "MESH_MT_mesh_fairing_quick_menu"
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        if context.mode == 'EDIT_MESH':
+            layout.operator(operators.MESH_OT_fair_vertices.bl_idname, 
+                          text="Fair Vertices", icon='MESH_DATA')
+        elif context.mode == 'SCULPT':
+            layout.operator(operators.SCULPT_OT_fair_vertices.bl_idname, 
+                          text="Fair Vertices", icon='SCULPTMODE_HLT')
+
+
 def display_popup(message: str, title: str = '', icon: str = ''):
     def draw(self, context):
         self.layout.label(text = message)

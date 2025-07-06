@@ -20,25 +20,27 @@ bl_info = {
     'description' : 'Continuity based smoothing tool',
     'author' : 'Brett Fedack',
     'location': (
-        'Sculpt mode: Sculpt menu, Edit mode: Vertex menu'
+        'Sculpt mode: Sculpt menu, Edit mode: Vertex menu, N-Panel: Mesh Fairing'
     ),
-    'version' : (1, 0, 4),
-    'blender' : (2, 90, 0),
+    'version' : (1, 1, 0),
+    'blender' : (4, 3, 0),
     'category' : 'Mesh'
 }
 
 import logging
+import importlib
 
 if 'bpy' not in locals():
     import bpy
     from . import operators
     from . import preferences
     from . import ui
+    from . import linalg
 else:
-    import imp
-    imp.reload(operators)
-    imp.reload(preferences)
-    imp.reload(ui)
+    importlib.reload(operators)
+    importlib.reload(preferences)
+    importlib.reload(ui)
+    importlib.reload(linalg)
 
 classes = (operators.MESH_OT_fair_vertices,
            operators.MESH_OT_fair_vertices_internal,
@@ -46,7 +48,9 @@ classes = (operators.MESH_OT_fair_vertices,
            operators.SCULPT_OT_fair_vertices_internal,
            operators.SCULPT_OT_push_undo,
            operators.SCRIPT_OT_install_module,
-           preferences.MeshFairingPreferences)
+           preferences.MeshFairingPreferences,
+           ui.MESH_PT_mesh_fairing_panel,
+           ui.MESH_MT_mesh_fairing_quick_menu)
 
 
 def register():
@@ -71,6 +75,43 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # Register scene properties for N-panel settings
+    bpy.types.Scene.mesh_fairing_continuity = bpy.props.EnumProperty(
+        name="Continuity",
+        description="Continuity constraint for fairing",
+        items=[
+            ('SMOOTH', 'Smooth', 'Simple Laplacian smoothing that averages neighboring vertices'),
+            ('POS', 'Position', 'Position continuity'),
+            ('TAN', 'Tangent', 'Tangent continuity'),
+            ('CURV', 'Curvature', 'Curvature continuity')
+        ],
+        default='SMOOTH'
+    )
+    
+    bpy.types.Scene.mesh_fairing_triangulate = bpy.props.BoolProperty(
+        name="Triangulate",
+        description="Triangulates affected region to produce higher quality results",
+        default=False
+    )
+    
+    bpy.types.Scene.sculpt_fairing_continuity = bpy.props.EnumProperty(
+        name="Continuity",
+        description="Continuity constraint for fairing",
+        items=[
+            ('SMOOTH', 'Smooth', 'Simple Laplacian smoothing that averages neighboring vertices'),
+            ('POS', 'Position', 'Position continuity'),
+            ('TAN', 'Tangent', 'Tangent continuity'),
+            ('CURV', 'Curvature', 'Curvature continuity')
+        ],
+        default='SMOOTH'
+    )
+    
+    bpy.types.Scene.sculpt_fairing_invert_mask = bpy.props.BoolProperty(
+        name="Invert Mask",
+        description="Fair unmasked vertices instead of masked vertices",
+        default=False
+    )
+
     # Add mesh fairing operators to existing menus.
     bpy.types.VIEW3D_MT_edit_mesh_vertices.append(ui.draw_vertex_menu)
     bpy.types.VIEW3D_MT_sculpt.append(ui.draw_sculpt_menu)
@@ -81,6 +122,15 @@ def unregister():
     # Remove mesh fairing operators from existing menus.
     bpy.types.VIEW3D_MT_edit_mesh_vertices.remove(ui.draw_vertex_menu)
     bpy.types.VIEW3D_MT_sculpt.remove(ui.draw_sculpt_menu)
+
+    # Unregister scene properties
+    try:
+        del bpy.types.Scene.mesh_fairing_continuity
+        del bpy.types.Scene.mesh_fairing_triangulate
+        del bpy.types.Scene.sculpt_fairing_continuity
+        del bpy.types.Scene.sculpt_fairing_invert_mask
+    except AttributeError:
+        pass
 
     # Unregister this Blender addon.
     for cls in reversed(classes):

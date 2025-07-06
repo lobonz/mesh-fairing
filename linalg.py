@@ -157,10 +157,24 @@ def init():
         solver = NullSolver()
         logging.debug('Using NullSolver')
     elif moduleutil.is_installed('scipy'):
-        solver = SciPySolver()
-        logging.debug('Using SciPySolver')
+        try:
+            # Try to create SciPySolver, but fall back if imports fail
+            solver = SciPySolver()
+            logging.debug('Using SciPySolver')
+        except (ImportError, ModuleNotFoundError) as e:
+            logging.warning(f'SciPy detected but imports failed: {e}. Falling back to NumPy.')
+            try:
+                solver = NumPySolver()
+                logging.debug('Using NumPySolver (fallback from SciPy)')
+            except (ImportError, ModuleNotFoundError):
+                solver = NullSolver()
+                logging.debug('Using NullSolver (fallback from both SciPy and NumPy)')
     else:
-        solver = NumPySolver()
-        logging.debug('Using NumPySolver')
+        try:
+            solver = NumPySolver()
+            logging.debug('Using NumPySolver')
+        except (ImportError, ModuleNotFoundError):
+            solver = NullSolver()
+            logging.debug('Using NullSolver (fallback from NumPy)')
 
 solver = NullSolver()

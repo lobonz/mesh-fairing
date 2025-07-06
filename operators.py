@@ -202,16 +202,28 @@ class MESH_OT_fair_vertices_internal(bpy.types.Operator):
 
             # Fair affected vertices.
             if not self.is_cancelled():
-                self.set_status('[Fairing] {}', fairing_status)
-                if not geometry.fair(
-                    affected_verts, self._continuity.value,
-                    types.VertexWeight.VORONOI.create_cache(),
-                    types.LoopWeight.COTAN.create_cache(),
-                    self._cancel_event, fairing_status):
+                if self._continuity == types.Continuity.SMOOTH:
+                    # Use simple Laplacian smoothing
+                    self.set_status('[Smoothing] {}', fairing_status)
+                    if not geometry.simple_smooth(
+                        affected_verts, iterations=3, factor=0.5,
+                        cancel_event=self._cancel_event, status=fairing_status):
 
-                    # Cancel this thread if fairing failed.
-                    logging.warn('Mesh fairing failed')
-                    self.cancel()
+                        # Cancel this thread if smoothing failed.
+                        logging.warn('Mesh smoothing failed')
+                        self.cancel()
+                else:
+                    # Use traditional mesh fairing
+                    self.set_status('[Fairing] {}', fairing_status)
+                    if not geometry.fair(
+                        affected_verts, self._continuity.value,
+                        types.VertexWeight.VORONOI.create_cache(),
+                        types.LoopWeight.COTAN.create_cache(),
+                        self._cancel_event, fairing_status):
+
+                        # Cancel this thread if fairing failed.
+                        logging.warn('Mesh fairing failed')
+                        self.cancel()
 
             # Update the mesh.
             self.set_status('Updating the mesh')
@@ -392,8 +404,8 @@ class SCULPT_OT_fair_vertices_internal(bpy.types.Operator):
                 if not self.is_cancelled() and len(affected_verts) == 0:
                     self.cancel()
 
-                # Triangulate region to produce higher quality results.
-                if not self.is_cancelled():
+                # For traditional fairing methods, triangulate region for higher quality results.
+                if not self.is_cancelled() and self._continuity != types.Continuity.SMOOTH:
                     self.set_status('Temporarily triangulating involved faces')
 
                     # Determine which faces are involved, accounting for continuity.
@@ -406,8 +418,8 @@ class SCULPT_OT_fair_vertices_internal(bpy.types.Operator):
                     # Triangulate involved faces.
                     bmesh.ops.triangulate(bm, faces = list(involved_faces))
 
-                # Pre-fair affected vertices for consistent results.
-                if not self.is_cancelled():
+                # Pre-fair affected vertices for consistent results (skip for simple smoothing).
+                if not self.is_cancelled() and self._continuity != types.Continuity.SMOOTH:
                     self.set_status('[Pre-Fairing] {}', fairing_status)
                     if not geometry.fair(
                         affected_verts, types.Continuity.POS.value,
@@ -421,16 +433,28 @@ class SCULPT_OT_fair_vertices_internal(bpy.types.Operator):
 
                 # Fair affected vertices.
                 if not self.is_cancelled():
-                    self.set_status('[Fairing] {}', fairing_status)
-                    if not geometry.fair(
-                        affected_verts, self._continuity.value,
-                        types.VertexWeight.VORONOI.create_cache(),
-                        types.LoopWeight.COTAN.create_cache(),
-                        self._cancel_event, fairing_status):
+                    if self._continuity == types.Continuity.SMOOTH:
+                        # Use simple Laplacian smoothing
+                        self.set_status('[Smoothing] {}', fairing_status)
+                        if not geometry.simple_smooth(
+                            affected_verts, iterations=3, factor=0.5,
+                            cancel_event=self._cancel_event, status=fairing_status):
 
-                        # Cancel this thread if fairing failed.
-                        logging.warn('Mesh fairing failed')
-                        self.cancel()
+                            # Cancel this thread if smoothing failed.
+                            logging.warn('Mesh smoothing failed')
+                            self.cancel()
+                    else:
+                        # Use traditional mesh fairing
+                        self.set_status('[Fairing] {}', fairing_status)
+                        if not geometry.fair(
+                            affected_verts, self._continuity.value,
+                            types.VertexWeight.VORONOI.create_cache(),
+                            types.LoopWeight.COTAN.create_cache(),
+                            self._cancel_event, fairing_status):
+
+                            # Cancel this thread if fairing failed.
+                            logging.warn('Mesh fairing failed')
+                            self.cancel()
 
                 # Update the mesh.
                 if not self.is_cancelled():

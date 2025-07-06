@@ -213,6 +213,72 @@ def calc_gaussian_curvature(v: bmesh.types.BMVert,
     return vert_weights[v] * (2 * math.pi - angle_sum)
 
 
+def simple_smooth(verts: List[bmesh.types.BMVert],
+                  iterations: int = 1,
+                  factor: float = 0.5,
+                  cancel_event: Optional[threading.Event] = None,
+                  status: Optional[types.Property] = None) -> bool:
+    """
+    Performs simple Laplacian smoothing by averaging neighboring vertex positions
+    
+    This provides traditional mesh smoothing that just averages out bumps and hollows
+    without the "minimal surface" behavior of mesh fairing that can cause bulging.
+    
+    Parameters:
+        verts (List[bmesh.types.BMVert]):      Vertices to smooth
+        iterations (int):                      Number of smoothing iterations
+        factor (float):                        Smoothing factor (0.0 = no change, 1.0 = full average)
+        cancel_event (Optional[threading.Event]): Event that can be set to return prematurely
+        status (Optional[types.Property]):     Status message
+        
+    Returns:
+        bool: True if smoothing succeeded; False otherwise
+    """
+    if not verts:
+        return True
+        
+    # Filter to only interior vertices (non-boundary, non-wire)
+    interior_verts = [v for v in verts if not v.is_boundary and not v.is_wire]
+    
+    if not interior_verts:
+        return True
+    
+    for iteration in range(iterations):
+        if cancel_event is not None and cancel_event.is_set():
+            return False
+            
+        if status is not None:
+            status.set('Smoothing vertices (iteration {}/{})'.format(iteration + 1, iterations))
+        
+        # Calculate new positions for all vertices first
+        new_positions = {}
+        
+        for v in interior_verts:
+            # Calculate average position of neighboring vertices
+            neighbor_positions = []
+            for edge in v.link_edges:
+                neighbor = edge.other_vert(v)
+                neighbor_positions.append(neighbor.co.copy())
+            
+            if neighbor_positions:
+                # Average the neighboring positions
+                avg_pos = mathutils.Vector((0, 0, 0))
+                for pos in neighbor_positions:
+                    avg_pos += pos
+                avg_pos /= len(neighbor_positions)
+                
+                # Blend between original position and averaged position
+                new_positions[v] = v.co.lerp(avg_pos, factor)
+            else:
+                new_positions[v] = v.co.copy()
+        
+        # Apply all new positions at once to avoid inter-iteration dependencies
+        for v, new_pos in new_positions.items():
+            v.co = new_pos
+    
+    return True
+
+
 def fair(verts: List[bmesh.types.BMVert],
          order: int,
          vert_weights: Dict[bmesh.types.BMVert, float],
